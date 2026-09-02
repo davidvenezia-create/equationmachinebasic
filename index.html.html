@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Equation Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F3E8;
+    --paper-2:#FFFFFF;
+    --ink:#23324A;
+    --ink-light:#5B6B82;
+    --accent:#2B6CB0;
+    --accent-dark:#1F4E82;
+    --accent-soft:#DCE8F6;
+    --good:#3C8F6A;
+    --good-soft:#DFF0E7;
+    --bad:#C94B3F;
+    --bad-soft:#F8E3E0;
+    --line:#DDD3BC;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Atkinson Hyperlegible','Verdana',sans-serif;
+    font-size:17px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:900px;margin:0 auto;padding:28px 20px 60px;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:2px solid var(--line);
+    padding-bottom:18px;
+    margin-bottom:22px;
+  }
+  .title-block{display:flex;align-items:center;gap:12px;}
+  .cog{
+    width:38px;height:38px;border-radius:50%;
+    border:5px dashed var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    background:var(--paper-2);
+    flex-shrink:0;
+  }
+  .cog::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--accent);}
+  h1{
+    font-family:'Fredoka','Trebuchet MS',sans-serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    color:var(--ink);
+  }
+  .subtitle{margin:4px 0 0;color:var(--ink-light);font-size:15px;max-width:44ch;}
+
+  .support-toggle{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .support-toggle .label{font-size:13px;color:var(--ink-light);}
+  .seg{display:flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper-2);}
+  .seg button{
+    border:none;background:none;padding:8px 14px;font-family:inherit;font-size:14px;
+    color:var(--ink-light);cursor:pointer;min-height:38px;
+  }
+  .seg button.active{background:var(--accent);color:#fff;font-weight:700;}
+  .seg button:focus-visible, button:focus-visible, input:focus-visible{outline:3px solid var(--accent-dark);outline-offset:2px;}
+
+  /* ---------- mode tabs ---------- */
+  .mode-tabs{display:flex;gap:10px;margin-bottom:20px;}
+  .mode-tab{
+    flex:1;
+    font-family:'Fredoka',sans-serif;
+    font-size:18px;
+    font-weight:600;
+    padding:14px 10px;
+    border:2px solid var(--line);
+    background:var(--paper-2);
+    border-radius:var(--radius);
+    color:var(--ink-light);
+    cursor:pointer;
+    min-height:52px;
+  }
+  .mode-tab.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    color:var(--accent-dark);
+  }
+
+  /* ---------- panel shell ---------- */
+  .panel{
+    background:var(--paper-2);
+    border:2px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-family:'Fredoka',sans-serif;
+    font-size:19px;
+    margin:0 0 4px;
+  }
+  .panel .hint{color:var(--ink-light);font-size:15px;margin:0 0 16px;}
+
+  .toolbar-row{
+    display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .toolbar-row .diff-group{display:flex;align-items:center;gap:10px;}
+  .toolbar-row .diff-group span{font-size:14px;color:var(--ink-light);}
+  .btn{
+    font-family:'Atkinson Hyperlegible',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:10px 18px;
+    border-radius:999px;
+    border:2px solid var(--accent);
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+    min-height:44px;
+  }
+  .btn.secondary{background:var(--paper-2);color:var(--accent-dark);}
+  .btn.quiet{background:none;border-color:transparent;color:var(--accent-dark);text-decoration:underline;padding:8px 6px;}
+
+  /* ---------- machine diagram ---------- */
+  .machine-row{
+    display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+    padding:18px 8px 8px;
+  }
+  .node{
+    width:60px;height:60px;border-radius:50%;
+    border:3px solid var(--ink);
+    background:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;
+    flex-shrink:0;
+  }
+  .gear{
+    width:64px;height:64px;border-radius:50%;
+    border:6px dashed var(--accent);
+    background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;
+    color:var(--accent-dark);
+    box-shadow:0 2px 5px rgba(35,50,74,0.15);
+    flex-shrink:0;
+    transition:opacity .3s, border-style .3s;
+  }
+  .gear.done{opacity:.35;border-style:solid;}
+  .arrow{font-size:22px;color:var(--ink-light);flex-shrink:0;}
+
+  /* ---------- play mode ---------- */
+  .scale-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  svg#scale{width:280px;height:150px;max-width:100%;}
+  .pan-labels{display:flex;justify-content:center;gap:56px;font-family:'Fredoka',sans-serif;font-size:16px;margin-top:-6px;}
+  .pan-labels div{width:110px;text-align:center;}
+  .guess-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 10px;flex-wrap:wrap;}
+  .guess-row label{font-weight:700;font-size:16px;}
+  .stepper-btn{
+    width:44px;height:44px;border-radius:50%;border:2px solid var(--accent);background:var(--paper-2);
+    color:var(--accent-dark);font-size:20px;font-weight:700;cursor:pointer;
+  }
+  #guessInput{
+    width:90px;text-align:center;font-family:'Fredoka',sans-serif;font-size:22px;
+    padding:8px;border-radius:10px;border:2px solid var(--line);
+  }
+  .feedback{
+    text-align:center;font-size:16px;font-weight:700;min-height:26px;border-radius:10px;padding:8px;
+    transition:background .2s;
+  }
+  .feedback.high{color:var(--bad);background:var(--bad-soft);}
+  .feedback.low{color:var(--bad);background:var(--bad-soft);}
+  .feedback.equal{color:var(--good);background:var(--good-soft);}
+  .feedback.empty{color:var(--ink-light);background:transparent;font-weight:400;}
+  .reveal-line{text-align:center;margin-top:10px;font-size:15px;color:var(--ink-light);}
+
+  /* ---------- solve mode ---------- */
+  .equation-display{
+    text-align:center;font-family:'Fredoka',sans-serif;font-size:32px;font-weight:600;
+    margin:14px 0 6px;color:var(--ink);
+  }
+  .dots{display:flex;justify-content:center;gap:8px;margin:6px 0 18px;}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--line);}
+  .dot.filled{background:var(--accent);}
+  .undo-box{
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    background:var(--paper);border:2px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin-top:8px;
+  }
+  .undo-btn{
+    font-family:'Fredoka',sans-serif;font-size:22px;font-weight:700;
+    padding:12px 30px;border-radius:999px;border:2px solid var(--accent-dark);
+    background:var(--accent);color:#fff;cursor:pointer;min-height:52px;
+  }
+  .undo-phrase{font-size:15px;color:var(--ink-light);text-align:center;}
+  .undo-phrase .support-line{display:block;font-style:italic;margin-top:2px;}
+  .done-banner{
+    text-align:center;background:var(--good-soft);color:var(--good);border-radius:var(--radius);
+    padding:16px;font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;
+  }
+  .done-banner p{font-family:'Atkinson Hyperlegible',sans-serif;font-size:15px;font-weight:400;color:var(--ink);margin:6px 0 12px;}
+
+  /* ---------- explain panel ---------- */
+  details.wordbank{margin-bottom:16px;}
+  details.wordbank summary{
+    cursor:pointer;font-weight:700;color:var(--accent-dark);padding:10px 0;font-size:15px;
+  }
+  .wb-term{
+    display:flex;flex-wrap:wrap;gap:4px 10px;padding:8px 0;border-top:1px solid var(--line);
+    font-size:15px;
+  }
+  .wb-term:first-of-type{border-top:none;}
+  .wb-term .term{font-weight:700;min-width:150px;}
+  .wb-term .def{color:var(--ink-light);flex:1;min-width:180px;}
+  .wb-term .lang-es,.wb-term .lang-ko{display:none;width:100%;font-style:italic;color:var(--accent-dark);font-size:14px;}
+  .wb-panel.support-es .lang-es{display:block;}
+  .wb-panel.support-ko .lang-ko{display:block;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .chip{
+    background:var(--accent-soft);color:var(--accent-dark);border:none;border-radius:999px;
+    padding:9px 14px;font-size:14px;cursor:pointer;text-align:left;
+    display:flex;flex-direction:column;min-height:38px;justify-content:center;
+  }
+  .chip .lang-es,.chip .lang-ko{display:none;font-style:italic;font-size:12px;}
+  .chip-row.support-es .lang-es{display:block;}
+  .chip-row.support-ko .lang-ko{display:block;}
+
+  textarea{
+    width:100%;min-height:110px;font-family:'Atkinson Hyperlegible',sans-serif;font-size:16px;
+    padding:12px;border-radius:10px;border:2px solid var(--line);resize:vertical;
+  }
+  .word-count{text-align:right;font-size:13px;color:var(--ink-light);margin-top:6px;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:520px){
+    h1{font-size:23px;}
+    .equation-display{font-size:24px;}
+    .node,.gear{width:52px;height:52px;font-size:14px;}
+    .pan-labels{gap:30px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #beamGroup{transition:none !important;}
+    .gear{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="title-block">
+      <div class="cog" aria-hidden="true"></div>
+      <div>
+        <h1>The Equation Machine</h1>
+        <p class="subtitle">Change the numbers. Watch what happens. Then work backwards to solve.</p>
+      </div>
+    </div>
+    <div class="support-toggle">
+      <span class="label">Word help:</span>
+      <div class="seg" id="supportSeg" role="group" aria-label="Choose a translation support language">
+        <button class="active" data-support="none">English only</button>
+        <button data-support="es">+ Español</button>
+        <button data-support="ko">+ 한국어</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mode-tabs" role="tablist">
+    <button class="mode-tab active" id="tabPlay" data-mode="play" role="tab" aria-selected="true">Play</button>
+    <button class="mode-tab" id="tabSolve" data-mode="solve" role="tab" aria-selected="false">Solve it</button>
+  </div>
+
+  <!-- MACHINE DIAGRAM (shared) -->
+  <div class="panel">
+    <h2>What the machine does to x</h2>
+    <p class="hint">This shows every step, in order, from x to the answer.</p>
+    <div class="machine-row" id="machineRow"></div>
+  </div>
+
+  <!-- PLAY PANEL -->
+  <div class="panel" id="playPanel">
+    <h2>Try a number for x</h2>
+    <p class="hint">Type a guess. Watch the scale.</p>
+
+    <div class="scale-wrap">
+      <svg id="scale" viewBox="0 0 300 160">
+        <polygon points="130,150 170,150 150,105" fill="#23324A"></polygon>
+        <g id="beamGroup" style="transform-origin:150px 105px; transition:transform .35s ease;">
+          <rect x="50" y="100" width="200" height="8" rx="4" fill="#23324A"></rect>
+          <line x1="60" y1="104" x2="60" y2="132" stroke="#23324A" stroke-width="3"></line>
+          <line x1="240" y1="104" x2="240" y2="132" stroke="#23324A" stroke-width="3"></line>
+          <path d="M 35 132 Q 60 155 85 132 Z" fill="#DCE8F6" stroke="#2B6CB0" stroke-width="2"></path>
+          <path d="M 215 132 Q 240 155 265 132 Z" fill="#DCE8F6" stroke="#2B6CB0" stroke-width="2"></path>
+        </g>
+      </svg>
+      <div class="pan-labels">
+        <div id="leftPanLabel">?</div>
+        <div id="rightPanLabel">?</div>
+      </div>
+    </div>
+
+    <div class="guess-row">
+      <label for="guessInput">My guess for x:</label>
+      <button class="stepper-btn" id="guessDown" aria-label="Decrease guess by 1">−</button>
+      <input type="number" id="guessInput" inputmode="numeric" placeholder="?">
+      <button class="stepper-btn" id="guessUp" aria-label="Increase guess by 1">+</button>
+    </div>
+
+    <div class="feedback empty" id="feedback">Type a number to test it.</div>
+    <div class="reveal-line">
+      <button class="btn quiet" id="revealBtn">Show me the answer</button>
+      <span id="revealText"></span>
+    </div>
+  </div>
+
+  <!-- SOLVE PANEL -->
+  <div class="panel hidden" id="solvePanel">
+    <h2>Undo each step</h2>
+    <p class="hint">Start with the last thing done to x. Undo it first, both sides at once.</p>
+
+    <div class="equation-display" id="equationDisplay">3x + 4 = 19</div>
+    <div class="dots" id="dots"></div>
+
+    <div id="undoArea">
+      <div class="undo-box">
+        <button class="undo-btn" id="undoBtn">− 4</button>
+        <p class="undo-phrase" id="undoPhrase">
+          Subtract 4 from both sides.
+          <span class="support-line lang-es" id="undoPhraseEs"></span>
+          <span class="support-line lang-ko" id="undoPhraseKo"></span>
+        </p>
+      </div>
+    </div>
+
+    <div id="doneArea" class="hidden">
+      <div class="done-banner">
+        You solved it! <span id="doneValue"></span>
+        <p>Check it — go to Play and type this number for x.</p>
+        <button class="btn secondary" id="checkInPlayBtn">Check it in Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR: difficulty + new equation (shared, placed above explain panel for flow) -->
+  <div class="panel">
+    <div class="toolbar-row" style="margin-bottom:0;">
+      <div class="diff-group">
+        <span>Steps:</span>
+        <div class="seg" id="diffSeg">
+          <button class="active" data-diff="1">1 step</button>
+          <button data-diff="2">2 steps</button>
+        </div>
+      </div>
+      <button class="btn" id="newEqBtn">New equation</button>
+    </div>
+  </div>
+
+  <!-- EXPLAIN PANEL -->
+  <div class="panel">
+    <h2>Explain your thinking</h2>
+    <p class="hint">Use a sentence starter below. Then finish it in your own words.</p>
+
+    <details class="wordbank">
+      <summary>Word bank</summary>
+      <div class="wb-panel" id="wbPanel">
+        <div class="wb-term">
+          <span class="term">equation</span>
+          <span class="def">a math sentence that says two things are equal</span>
+          <span class="lang-es">ecuación — una oración matemática que dice que dos cosas son iguales</span>
+          <span class="lang-ko">방정식 — 두 가지가 같다고 말하는 수학 문장</span>
+        </div>
+        <div class="wb-term">
+          <span class="term">variable</span>
+          <span class="def">a letter that stands for a missing number, like x</span>
+          <span class="lang-es">variable — una letra que representa un número desconocido</span>
+          <span class="lang-ko">변수 — 모르는 수를 나타내는 문자</span>
+        </div>
+        <div class="wb-term">
+          <span class="term">inverse operation</span>
+          <span class="def">the operation that undoes another operation</span>
+          <span class="lang-es">operación inversa — la operación que deshace otra operación</span>
+          <span class="lang-ko">역연산 — 다른 연산을 되돌리는 연산</span>
+        </div>
+        <div class="wb-term">
+          <span class="term">isolate</span>
+          <span class="def">to get the variable alone on one side</span>
+          <span class="lang-es">aislar — dejar la variable sola en un lado</span>
+          <span class="lang-ko">고립시키다 — 변수를 한쪽에 혼자 두기</span>
+        </div>
+        <div class="wb-term">
+          <span class="term">balance</span>
+          <span class="def">both sides of the equation have the same value</span>
+          <span class="lang-es">equilibrio — ambos lados de la ecuación tienen el mismo valor</span>
+          <span class="lang-ko">균형 — 방정식의 양쪽이 같은 값을 가짐</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="chip-row" id="chipRow">
+      <button class="chip" data-insert="First, I ">First, I ___
+        <span class="lang-es">Primero, yo ___</span>
+        <span class="lang-ko">먼저, 저는 ___</span>
+      </button>
+      <button class="chip" data-insert="This undoes the ">This undoes the ___
+        <span class="lang-es">Esto deshace el/la ___</span>
+        <span class="lang-ko">이것은 ___을(를) 없앱니다</span>
+      </button>
+      <button class="chip" data-insert="Next, I ">Next, I ___
+        <span class="lang-es">Después, yo ___</span>
+        <span class="lang-ko">다음으로, 저는 ___</span>
+      </button>
+      <button class="chip" data-insert="I know x = ">I know x = ___ because
+        <span class="lang-es">Sé que x = ___ porque ___</span>
+        <span class="lang-ko">x = ___인 것을 압니다, 왜냐하면 ___</span>
+      </button>
+    </div>
+
+    <textarea id="explainText" placeholder="Write your steps here..."></textarea>
+    <div class="word-count" id="wordCount">0 words</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  var state = {
+    mode: 'play',
+    support: 'none',
+    difficulty: 1,
+    problem: null,
+    guess: '',
+    solveStep: 0,
+    solveDone: false
+  };
+
+  // ---------- math engine ----------
+  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  function generateProblem(level){
+    var types = level === 1
+      ? ['addX','subX','mulX','divX']
+      : ['mulAdd','mulSub','divAdd','divSub'];
+    var type = types[randInt(0, types.length-1)];
+    var a=0,b=0,x=0,c=0;
+
+    switch(type){
+      case 'addX':
+        x = randInt(-9,9); if(x===0) x=3;
+        b = randInt(2,12); c = x+b; break;
+      case 'subX':
+        x = randInt(-9,9); if(x===0) x=3;
+        b = randInt(2,12); c = x-b; break;
+      case 'mulX':
+        x = randInt(-9,9); if(x===0) x=3;
+        a = randInt(2,9); c = x*a; break;
+      case 'divX':
+        a = randInt(2,9); x = a*randInt(-6,6); if(x===0) x=a*2;
+        c = x/a; break;
+      case 'mulAdd':
+        x = randInt(-9,9); if(x===0) x=3;
+        a = randInt(2,9); b = randInt(2,12); c = a*x+b; break;
+      case 'mulSub':
+        x = randInt(-9,9); if(x===0) x=3;
+        a = randInt(2,9); b = randInt(2,12); c = a*x-b; break;
+      case 'divAdd':
+        a = randInt(2,9); x = a*randInt(-6,6); if(x===0) x=a*2;
+        b = randInt(2,12); c = x/a+b; break;
+      case 'divSub':
+        a = randInt(2,9); x = a*randInt(-6,6); if(x===0) x=a*2;
+        b = randInt(2,12); c = x/a-b; break;
+    }
+    return {type:type, a:a, b:b, x:x, c:c};
+  }
+
+  function lhsTemplate(type,a,b){
+    switch(type){
+      case 'addX': return 'x + ' + b;
+      case 'subX': return 'x \u2212 ' + b;
+      case 'mulX': return a + 'x';
+      case 'divX': return 'x \u00F7 ' + a;
+      case 'mulAdd': return a + 'x + ' + b;
+      case 'mulSub': return a + 'x \u2212 ' + b;
+      case 'divAdd': return 'x \u00F7 ' + a + ' + ' + b;
+      case 'divSub': return 'x \u00F7 ' + a + ' \u2212 ' + b;
+    }
+  }
+
+  function computeLHS(type,a,b,xg){
+    switch(type){
+      case 'addX': return xg + b;
+      case 'subX': return xg - b;
+      case 'mulX': return xg * a;
+      case 'divX': return xg / a;
+      case 'mulAdd': return a*xg + b;
+      case 'mulSub': return a*xg - b;
+      case 'divAdd': return xg/a + b;
+      case 'divSub': return xg/a - b;
+    }
+  }
+
+  function diagramOps(type,a,b){
+    switch(type){
+      case 'addX': return [{sym:'+', val:b}];
+      case 'subX': return [{sym:'\u2212', val:b}];
+      case 'mulX': return [{sym:'\u00D7', val:a}];
+      case 'divX': return [{sym:'\u00F7', val:a}];
+      case 'mulAdd': return [{sym:'\u00D7', val:a},{sym:'+', val:b}];
+      case 'mulSub': return [{sym:'\u00D7', val:a},{sym:'\u2212', val:b}];
+      case 'divAdd': return [{sym:'\u00F7', val:a},{sym:'+', val:b}];
+      case 'divSub': return [{sym:'\u00F7', val:a},{sym:'\u2212', val:b}];
+    }
+  }
+
+  function getSolveSteps(type,a,b,c){
+    switch(type){
+      case 'addX': return [{kind:'sub', val:b, newLHS:'x', newRHS:c-b}];
+      case 'subX': return [{kind:'add', val:b, newLHS:'x', newRHS:c+b}];
+      case 'mulX': return [{kind:'div', val:a, newLHS:'x', newRHS:c/a}];
+      case 'divX': return [{kind:'mul', val:a, newLHS:'x', newRHS:c*a}];
+      case 'mulAdd': return [
+        {kind:'sub', val:b, newLHS:a+'x', newRHS:c-b},
+        {kind:'div', val:a, newLHS:'x', newRHS:(c-b)/a}
+      ];
+      case 'mulSub': return [
+        {kind:'add', val:b, newLHS:a+'x', newRHS:c+b},
+        {kind:'div', val:a, newLHS:'x', newRHS:(c+b)/a}
+      ];
+      case 'divAdd': return [
+        {kind:'sub', val:b, newLHS:'x \u00F7 '+a, newRHS:c-b},
+        {kind:'mul', val:a, newLHS:'x', newRHS:(c-b)*a}
+      ];
+      case 'divSub': return [
+        {kind:'add', val:b, newLHS:'x \u00F7 '+a, newRHS:c+b},
+        {kind:'mul', val:a, newLHS:'x', newRHS:(c+b)*a}
+      ];
+    }
+  }
+
+  var ACTION_PHRASE = {
+    add:{ en:function(v){return 'Add '+v+' to both sides.';},
+          es:function(v){return 'Suma '+v+' a ambos lados.';},
+          ko:function(v){return '양쪽에 '+v+'을 더하세요.';} },
+    sub:{ en:function(v){return 'Subtract '+v+' from both sides.';},
+          es:function(v){return 'Resta '+v+' de ambos lados.';},
+          ko:function(v){return '양쪽에서 '+v+'을 빼세요.';} },
+    mul:{ en:function(v){return 'Multiply both sides by '+v+'.';},
+          es:function(v){return 'Multiplica ambos lados por '+v+'.';},
+          ko:function(v){return '양쪽에 '+v+'을 곱하세요.';} },
+    div:{ en:function(v){return 'Divide both sides by '+v+'.';},
+          es:function(v){return 'Divide ambos lados entre '+v+'.';},
+          ko:function(v){return '양쪽을 '+v+'로 나누세요.';} }
+  };
+  var SYMBOL = {add:'+', sub:'\u2212', mul:'\u00D7', div:'\u00F7'};
+
+  // ---------- DOM refs ----------
+  var el = {};
+  ['machineRow','playPanel','solvePanel','feedback','leftPanLabel','rightPanLabel',
+   'guessInput','revealBtn','revealText','beamGroup','equationDisplay','dots',
+   'undoArea','undoBtn','undoPhrase','undoPhraseEs','undoPhraseKo','doneArea',
+   'doneValue','explainText','wordCount','wbPanel','chipRow'].forEach(function(id){
+    el[id] = document.getElementById(id);
+  });
+
+  // ---------- rendering: machine diagram ----------
+  function renderMachine(){
+    var p = state.problem;
+    var ops = diagramOps(p.type, p.a, p.b);
+    var undoneCount = state.mode === 'solve' ? state.solveStep : 0;
+    var html = '<div class="node">x</div>';
+    ops.forEach(function(op, i){
+      var isDone = undoneCount > (ops.length - 1 - i);
+      html += '<div class="arrow">\u2192</div>';
+      html += '<div class="gear' + (isDone ? ' done' : '') + '">' + op.sym + ' ' + op.val + '</div>';
+    });
+    html += '<div class="arrow">\u2192</div>';
+    html += '<div class="node">' + p.c + '</div>';
+    el.machineRow.innerHTML = html;
+  }
+
+  // ---------- rendering: play mode ----------
+  function renderPlay(){
+    var p = state.problem;
+    el.leftPanLabel.textContent = lhsTemplate(p.type, p.a, p.b);
+    el.rightPanLabel.textContent = p.c;
+
+    var raw = el.guessInput.value;
+    if(raw === ''){
+      el.feedback.className = 'feedback empty';
+      el.feedback.textContent = 'Type a number to test it.';
+      el.beamGroup.style.transform = 'rotate(0deg)';
+      return;
+    }
+    var g = parseFloat(raw);
+    if(isNaN(g)){
+      el.feedback.className = 'feedback empty';
+      el.feedback.textContent = 'Type a number to test it.';
+      el.beamGroup.style.transform = 'rotate(0deg)';
+      return;
+    }
+    var leftVal = computeLHS(p.type, p.a, p.b, g);
+    var tilt = Math.max(-18, Math.min(18, (p.c - leftVal) * 4));
+    el.beamGroup.style.transform = 'rotate(' + tilt + 'deg)';
+
+    if(Math.abs(leftVal - p.c) < 1e-9){
+      el.feedback.className = 'feedback equal';
+      el.feedback.textContent = 'Balanced! This value of x works.';
+    } else if(leftVal > p.c){
+      el.feedback.className = 'feedback high';
+      el.feedback.textContent = 'Too high \u2014 try a smaller number.';
+    } else {
+      el.feedback.className = 'feedback low';
+      el.feedback.textContent = 'Too low \u2014 try a bigger number.';
+    }
+  }
+
+  // ---------- rendering: solve mode ----------
+  function renderSolve(){
+    var p = state.problem;
+    var steps = getSolveSteps(p.type, p.a, p.b, p.c);
+    var total = steps.length;
+
+    var curLHS, curRHS;
+    if(state.solveStep === 0){
+      curLHS = lhsTemplate(p.type, p.a, p.b);
+      curRHS = p.c;
+    } else {
+      var prev = steps[state.solveStep - 1];
+      curLHS = prev.newLHS;
+      curRHS = prev.newRHS;
+    }
+    el.equationDisplay.textContent = curLHS + ' = ' + curRHS;
+
+    var dotsHtml = '';
+    for(var i=0;i<total;i++){
+      dotsHtml += '<div class="dot' + (i < state.solveStep ? ' filled' : '') + '"></div>';
+    }
+    el.dots.innerHTML = dotsHtml;
+
+    if(state.solveStep >= total){
+      state.solveDone = true;
+      el.undoArea.classList.add('hidden');
+      el.doneArea.classList.remove('hidden');
+      el.doneValue.textContent = 'x = ' + p.x;
+    } else {
+      state.solveDone = false;
+      el.undoArea.classList.remove('hidden');
+      el.doneArea.classList.add('hidden');
+      var step = steps[state.solveStep];
+      el.undoBtn.textContent = SYMBOL[step.kind] + ' ' + step.val;
+      el.undoPhrase.firstChild.textContent = ACTION_PHRASE[step.kind].en(step.val) + ' ';
+      el.undoPhraseEs.textContent = ACTION_PHRASE[step.kind].es(step.val);
+      el.undoPhraseKo.textContent = ACTION_PHRASE[step.kind].ko(step.val);
+    }
+  }
+
+  function applySupportClasses(){
+    var cls = state.support === 'es' ? 'support-es' : (state.support === 'ko' ? 'support-ko' : '');
+    el.wbPanel.className = 'wb-panel ' + cls;
+    el.chipRow.className = 'chip-row ' + cls;
+  }
+
+  function render(){
+    renderMachine();
+    if(state.mode === 'play'){
+      el.playPanel.classList.remove('hidden');
+      el.solvePanel.classList.add('hidden');
+      renderPlay();
+    } else {
+      el.solvePanel.classList.remove('hidden');
+      el.playPanel.classList.add('hidden');
+      renderSolve();
+    }
+  }
+
+  // ---------- actions ----------
+  function newEquation(){
+    state.problem = generateProblem(state.difficulty);
+    state.solveStep = 0;
+    state.solveDone = false;
+    el.guessInput.value = '';
+    el.revealText.textContent = '';
+    render();
+  }
+
+  function setMode(m){
+    state.mode = m;
+    document.getElementById('tabPlay').classList.toggle('active', m === 'play');
+    document.getElementById('tabPlay').setAttribute('aria-selected', m === 'play');
+    document.getElementById('tabSolve').classList.toggle('active', m === 'solve');
+    document.getElementById('tabSolve').setAttribute('aria-selected', m === 'solve');
+    render();
+  }
+
+  function setDifficulty(d){
+    state.difficulty = d;
+    document.querySelectorAll('#diffSeg button').forEach(function(b){
+      b.classList.toggle('active', parseInt(b.dataset.diff,10) === d);
+    });
+    newEquation();
+  }
+
+  function setSupport(s){
+    state.support = s;
+    document.querySelectorAll('#supportSeg button').forEach(function(b){
+      b.classList.toggle('active', b.dataset.support === s);
+    });
+    applySupportClasses();
+  }
+
+  // ---------- wire up events ----------
+  document.getElementById('tabPlay').addEventListener('click', function(){ setMode('play'); });
+  document.getElementById('tabSolve').addEventListener('click', function(){ setMode('solve'); });
+
+  document.querySelectorAll('#diffSeg button').forEach(function(b){
+    b.addEventListener('click', function(){ setDifficulty(parseInt(b.dataset.diff,10)); });
+  });
+  document.querySelectorAll('#supportSeg button').forEach(function(b){
+    b.addEventListener('click', function(){ setSupport(b.dataset.support); });
+  });
+
+  document.getElementById('newEqBtn').addEventListener('click', newEquation);
+
+  el.guessInput.addEventListener('input', renderPlay);
+  document.getElementById('guessUp').addEventListener('click', function(){
+    var v = parseFloat(el.guessInput.value); if(isNaN(v)) v = 0;
+    el.guessInput.value = v + 1; renderPlay();
+  });
+  document.getElementById('guessDown').addEventListener('click', function(){
+    var v = parseFloat(el.guessInput.value); if(isNaN(v)) v = 0;
+    el.guessInput.value = v - 1; renderPlay();
+  });
+  el.revealBtn.addEventListener('click', function(){
+    el.revealText.textContent = 'Answer: x = ' + state.problem.x;
+  });
+
+  el.undoBtn.addEventListener('click', function(){
+    state.solveStep++;
+    renderMachine();
+    renderSolve();
+  });
+  document.getElementById('checkInPlayBtn').addEventListener('click', function(){
+    setMode('play');
+    el.guessInput.focus();
+  });
+
+  document.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var insert = chip.dataset.insert;
+      var ta = el.explainText;
+      var start = ta.value.length ? ta.value + (ta.value.endsWith(' ') ? '' : ' ') : '';
+      ta.value = start + insert;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = ta.value.length;
+      updateWordCount();
+    });
+  });
+
+  function updateWordCount(){
+    var words = el.explainText.value.trim().split(/\s+/).filter(Boolean);
+    el.wordCount.textContent = words.length + (words.length === 1 ? ' word' : ' words');
+  }
+  el.explainText.addEventListener('input', updateWordCount);
+
+  // ---------- init ----------
+  newEquation();
+})();
+</script>
+</body>
+</html>
